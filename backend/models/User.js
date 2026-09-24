@@ -30,13 +30,12 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-// Runs automatically before saving a user — hashes the password
+// Runs automatically before saving a user - hashes the password
 // so the real password is never stored in the database.
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next(); // skip if password wasn't changed
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return; // skip if password was not changed
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 // Instance method: checks a typed-in password against the stored hash.
