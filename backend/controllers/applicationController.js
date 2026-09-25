@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const path = require('path');
 const Application = require('../models/Application');
 
 // Only these fields can be set from the request body.
@@ -85,6 +86,33 @@ exports.deleteApplication = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
     res.json({ message: 'Application deleted' });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// POST /api/applications/:id/resume  -> upload a resume file for one application
+exports.uploadResume = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const application = await Application.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
+      { resumeFileName: req.file.filename },
+      { new: true }
+    );
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    res.json({ message: 'Resume uploaded successfully', application });
   } catch (error) {
     handleError(error, res);
   }

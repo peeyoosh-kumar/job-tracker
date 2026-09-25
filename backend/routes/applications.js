@@ -1,10 +1,12 @@
 const express = require('express');
 const { protect } = require('../middleware/tempAuth');
+const upload = require('../middleware/upload');
 const {
   getApplications,
   createApplication,
   updateApplication,
-  deleteApplication
+  deleteApplication,
+  uploadResume
 } = require('../controllers/applicationController');
 
 const router = express.Router();
@@ -19,5 +21,9 @@ router.route('/').get(getApplications).post(createApplication);
 // PUT /api/applications/:id     -> update an application
 // DELETE /api/applications/:id  -> delete an application
 router.route('/:id').put(updateApplication).delete(deleteApplication);
+
+// POST /api/applications/:id/resume  -> upload a resume file
+// upload.single('resume') means: expect ONE file, sent under the field name "resume"
+router.post('/:id/resume', upload.single('resume'), uploadResume);
 
 module.exports = router;
