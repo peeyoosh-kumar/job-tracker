@@ -1,5 +1,5 @@
 const express = require('express');
-const { protect } = require('../middleware/tempAuth');
+const { protect } = require('../middleware/auth');
 const { getInterviews, addInterview } = require('../controllers/interviewController');
 
 const router = express.Router();
