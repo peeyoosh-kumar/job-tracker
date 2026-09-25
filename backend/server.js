@@ -24,6 +24,15 @@ app.get('/', (req, res) => {
 // Auth routes: register and login
 app.use('/api/auth', require('./routes/auth'));
 
+// Applications routes: list, add, edit, delete (login required)
+app.use('/api/applications', require('./routes/applications'));
+
+// Interviews routes: list and add interview details (login required)
+app.use('/api/interviews', require('./routes/interviews'));
+
+// Dashboard route: summary statistics (login required)
+app.use('/api/dashboard', require('./routes/dashboard'));
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
