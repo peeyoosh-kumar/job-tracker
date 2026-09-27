@@ -33,6 +33,9 @@ app.use('/api/interviews', require('./routes/interviews'));
 // Dashboard route: summary statistics (login required)
 app.use('/api/dashboard', require('./routes/dashboard'));
 
+// Admin routes: security/audit logs and suspicious activity (admin only)
+app.use('/api/admin', require('./routes/admin'));
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
