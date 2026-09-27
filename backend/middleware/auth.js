@@ -8,6 +8,7 @@
 
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { logger } = require('./logger');
 
 const protect = async (req, res, next) => {
   try {
@@ -28,7 +29,7 @@ const protect = async (req, res, next) => {
         algorithms: ['HS256'], // only accept the algorithm our login uses
       });
     } catch (err) {
-      // TODO (after logger.js exists): logger.warn('Invalid or expired token', { ip: req.ip });
+      logger.warn('Invalid or expired token', { ip: req.ip });
       return res
         .status(401)
         .json({ message: 'Not authorized, invalid or expired token' });
@@ -57,7 +58,10 @@ const protect = async (req, res, next) => {
 const adminOnly = (req, res, next) => {
   // req.user is set by protect, so protect must run first
   if (!req.user || req.user.role !== 'admin') {
-    // TODO (after logger.js exists): logger.warn('Admin access denied', { userId: req.user?._id, ip: req.ip });
+    logger.warn('Admin access denied', {
+      userId: req.user ? req.user._id : undefined,
+      ip: req.ip,
+    });
     return res.status(403).json({ message: 'Admin access required' });
   }
   next();
