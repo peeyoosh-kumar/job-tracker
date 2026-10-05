@@ -9,7 +9,7 @@ const STATUS_OPTIONS = [
   "Rejected",
 ];
 
-function Applications({ token }) {
+function Applications({ token, onAuthError }) {
   const [applications, setApplications] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,10 @@ function Applications({ token }) {
       const data = await apiRequest("/applications", { token });
       setApplications(data);
     } catch (err) {
+      if (err.status === 401) {
+        onAuthError();
+        return;
+      }
       setError(err.message);
     } finally {
       setLoading(false);
@@ -43,17 +47,7 @@ function Applications({ token }) {
     e.preventDefault();
     setFormError("");
     setSubmitting(true);
-    async function handleDelete(id) {
-    try {
-      await apiRequest(`/applications/${id}`, {
-        method: "DELETE",
-        token,
-      });
-      await loadApplications();
-    } catch (err) {
-      setError(err.message);
-    }
-  }
+
     try {
       await apiRequest("/applications", {
         method: "POST",
@@ -75,11 +69,34 @@ function Applications({ token }) {
       // refresh the list so the new entry shows up
       await loadApplications();
     } catch (err) {
+      if (err.status === 401) {
+        onAuthError();
+        return;
+      }
       setFormError(err.message);
     } finally {
       setSubmitting(false);
     }
   }
+
+  async function handleDelete(id) {
+    try {
+      await apiRequest(`/applications/${id}`, {
+        method: "DELETE",
+        token,
+      });
+      await loadApplications();
+    } catch (err) {
+      if (err.status === 401) {
+        onAuthError();
+        return;
+      }
+      setError(err.message);
+    }
+  }
+
+  if (loading) return <p>Loading applications...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div>
@@ -120,13 +137,9 @@ function Applications({ token }) {
       {formError && <p style={{ color: "red" }}>{formError}</p>}
 
       <h2>My Applications</h2>
-      {loading ? (
-        <p>Loading applications...</p>
-      ) : error ? (
-        <p style={{ color: "red" }}>{error}</p>
-      ) : applications.length === 0 ? (
+      {applications.length === 0 ? (
         <p>No applications yet.</p>
-                  ) : (
+      ) : (
         <ul>
           {applications.map((app) => (
             <li key={app._id} style={{ marginBottom: "1em" }}>
