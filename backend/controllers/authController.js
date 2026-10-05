@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { logger } = require('../middleware/logger');
 
 // Creates a signed token that contains the user's id.
 // The frontend sends it back on every request to prove who the user is.
@@ -48,8 +49,11 @@ exports.login = async (req, res) => {
     // Same message for "no such email" and "wrong password", so attackers
     // cannot find out which emails are registered.
     if (!user || !(await user.comparePassword(password))) {
+      logger.warn('Failed login', { email, ip: req.ip });
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    logger.info('Successful login', { userId: user._id, ip: req.ip });
 
     res.json({
       token: generateToken(user._id),
