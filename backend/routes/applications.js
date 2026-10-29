@@ -1,6 +1,7 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { applicationValidation } = require('../middleware/validators');
 const {
   getApplications,
   createApplication,
@@ -16,7 +17,11 @@ router.use(protect);
 
 // GET /api/applications    -> list the user's applications
 // POST /api/applications   -> add a new application
-router.route('/').get(getApplications).post(createApplication);
+// applicationValidation checks company, role, status and dates before createApplication runs
+router
+  .route('/')
+  .get(getApplications)
+  .post(applicationValidation, createApplication);
 
 // PUT /api/applications/:id     -> update an application
 // DELETE /api/applications/:id  -> delete an application
