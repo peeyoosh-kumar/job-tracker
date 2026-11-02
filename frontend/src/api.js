@@ -1,22 +1,34 @@
 const API_BASE = "http://localhost:5000/api";
 
-export async function apiRequest(path, { method = "GET", body, token } = {}) {
-  const headers = { "Content-Type": "application/json" };
+export async function apiRequest(path, { method = "GET", body, formData, token } = {}) {
+  const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let payload;
+  if (formData) {
+    // File upload: the browser sets the Content-Type itself, so we must not
+    payload = formData;
+  } else if (body) {
+    headers["Content-Type"] = "application/json";
+    payload = JSON.stringify(body);
+  }
 
-  const data = await res.json();
+  const res = await fetch(`${API_BASE}${path}`, { method, headers, body: payload });
+
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    data = {};
+  }
 
   if (!res.ok) {
-    // data.message covers the plain error cases; data.errors covers
-    // the express-validator shape, in case Peeyoosh wires it in later
-    const error = new Error(data.message || "Something went wrong");
-    error.status = res.status; // lets callers tell a 401 apart from other errors
+    let message = data.message || "Something went wrong";
+    if (Array.isArray(data.errors) && data.errors.length > 0) {
+      message = data.errors.map((e) => e.msg).join(". ");
+    }
+    const error = new Error(message);
+    error.status = res.status;
     throw error;
   }
 
