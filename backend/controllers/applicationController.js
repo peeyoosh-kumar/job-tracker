@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
 const Application = require('../models/Application');
 
 // Only these fields can be set from the request body.
@@ -113,6 +114,49 @@ exports.uploadResume = async (req, res) => {
     }
 
     res.json({ message: 'Resume uploaded successfully', application });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// Resume file names we create look like 32 hex characters + .pdf/.doc/.docx
+const SAFE_RESUME_NAME = /^[a-f0-9]{32}\.(pdf|docx|doc)$/;
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+
+// GET /api/applications/:id/resume  -> download the resume of one application
+exports.downloadResume = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    // Searching by BOTH id and user means you can only download your own resume
+    const application = await Application.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    }).select('resumeFileName');
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    if (!application.resumeFileName) {
+      return res.status(404).json({ message: 'Resume not found' });
+    }
+
+    // The file name comes from the database only. This check refuses anything
+    // that is not one of our own random names (for example one containing "..").
+    const fileName = application.resumeFileName;
+    if (!SAFE_RESUME_NAME.test(fileName)) {
+      return res.status(404).json({ message: 'Resume not found' });
+    }
+
+    const fullPath = path.join(UPLOADS_DIR, fileName);
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ message: 'Resume not found' });
+    }
+
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.download(fullPath, 'resume' + path.extname(fileName));
   } catch (error) {
     handleError(error, res);
   }

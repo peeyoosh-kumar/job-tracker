@@ -7,7 +7,8 @@ const {
   createApplication,
   updateApplication,
   deleteApplication,
-  uploadResume
+  uploadResume,
+  downloadResume
 } = require('../controllers/applicationController');
 
 const router = express.Router();
@@ -30,5 +31,8 @@ router.route('/:id').put(updateApplication).delete(deleteApplication);
 // POST /api/applications/:id/resume  -> upload a resume file
 // upload.single('resume') means: expect ONE file, sent under the field name "resume"
 router.post('/:id/resume', upload.single('resume'), uploadResume);
+
+// GET /api/applications/:id/resume  -> download the resume of your own application
+router.get('/:id/resume', downloadResume);
 
 module.exports = router;
