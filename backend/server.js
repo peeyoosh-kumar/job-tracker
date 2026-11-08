@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
@@ -15,6 +16,9 @@ mongoose.connect(process.env.MONGO_URI)
 app.use(cors());           // allows the frontend (different port) to call this API
 app.use(express.json());   // lets the server read JSON data sent in requests
 app.use(morgan('dev'));    // logs each request to the console (method, path, status, time)
+
+// General limit: 100 requests per IP per 15 minutes on every /api route
+app.use('/api', apiLimiter);
 
 // A simple test route to confirm the server is alive
 app.get('/', (req, res) => {
