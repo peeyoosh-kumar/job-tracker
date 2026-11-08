@@ -40,6 +40,21 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 // Admin routes: security/audit logs and suspicious activity (admin only)
 app.use('/api/admin', require('./routes/admin'));
 
+// Unknown URL: reply with JSON instead of Express's default HTML page
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
+// General error handler: catches errors that no route handled.
+// Express knows it is an error handler because it has FOUR parameters.
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ message: 'Invalid JSON in request body' });
+  }
+  console.error(err);
+  res.status(500).json({ message: 'Server error' });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
