@@ -74,4 +74,17 @@ const applicationValidation = [
   handleValidationErrors,
 ];
 
-module.exports = { registerValidation, loginValidation, applicationValidation };
+const applicationUpdateValidation = [
+  body('company').optional().trim().notEmpty().withMessage('Company cannot be empty'),
+  body('role').optional().trim().notEmpty().withMessage('Role cannot be empty'),
+  body('status')
+    .optional({ checkFalsy: true })
+    .isIn(APPLICATION_STATUSES)
+    .withMessage(`Status must be one of: ${APPLICATION_STATUSES.join(', ')}`),
+  body('appliedDate').optional({ checkFalsy: true }).isISO8601().withMessage('Applied date must be a valid date (YYYY-MM-DD)'),
+  body('deadline').optional({ checkFalsy: true }).isISO8601().withMessage('Deadline must be a valid date (YYYY-MM-DD)'),
+  body('notes').optional({ checkFalsy: true }).isString().withMessage('Notes must be text'),
+  handleValidationErrors,
+];
+
+module.exports = { registerValidation, loginValidation, applicationValidation, applicationUpdateValidation };
