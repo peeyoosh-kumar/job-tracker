@@ -1,7 +1,7 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
-const { applicationValidation } = require('../middleware/validators');
+const { applicationValidation, applicationUpdateValidation } = require('../middleware/validators');
 const {
   getApplications,
   createApplication,
@@ -26,7 +26,8 @@ router
 
 // PUT /api/applications/:id     -> update an application
 // DELETE /api/applications/:id  -> delete an application
-router.route('/:id').put(updateApplication).delete(deleteApplication);
+// applicationUpdateValidation checks any fields that are sent before updateApplication runs
+router.route('/:id').put(applicationUpdateValidation, updateApplication).delete(deleteApplication);
 
 // POST /api/applications/:id/resume  -> upload a resume file
 // upload.single('resume') means: expect ONE file, sent under the field name "resume"

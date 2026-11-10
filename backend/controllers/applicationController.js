@@ -55,10 +55,16 @@ exports.updateApplication = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
+    // NEW: the validator treats an empty status or appliedDate as "not sent",
+    // so remove them here. Otherwise they would be written to the database.
+    const updates = pickAllowed(req.body);
+    if (!updates.status) delete updates.status;
+    if (!updates.appliedDate) delete updates.appliedDate;
+
     // Searching by BOTH id and user means you can only edit your own applications
     const application = await Application.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
-      pickAllowed(req.body),
+      updates,
       { new: true, runValidators: true }
     );
 
