@@ -22,8 +22,13 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected successfully'))
   .catch((err) => console.error('MongoDB connection failed:', err.message));
 
+// CORS: only these frontend addresses may call the API from a browser.
+// A deployed frontend address can be added with FRONTEND_URL in .env (no code change needed).
+const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+
 // Middleware: runs on every request before it reaches a route
-app.use(cors());           // allows the frontend (different port) to call this API
+app.use(cors({ origin: allowedOrigins })); // only the frontend addresses above are allowed
 app.use(express.json());   // lets the server read JSON data sent in requests
 app.use(morgan('dev'));    // logs each request to the console (method, path, status, time)
 
