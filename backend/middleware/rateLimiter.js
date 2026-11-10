@@ -16,6 +16,7 @@ const rateLimitHandler = (req, res) => {
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 5, // 5 attempts per IP per window (v8 uses "limit", not "max")
+  skipSuccessfulRequests: true, // only failed logins (status 400 and above) count toward the limit
   standardHeaders: true, // sends standard RateLimit-* headers
   legacyHeaders: false, // skips the old, non-standard X-RateLimit-* headers
   handler: rateLimitHandler,
