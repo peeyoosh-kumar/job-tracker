@@ -2,10 +2,16 @@ const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
 const Application = require('../models/Application');
+const Interview = require('../models/Interview'); // NEW: needed to delete an application's interviews
 
 // Only these fields can be set from the request body.
 // This stops a user from sending extra fields (like "user") to change the owner.
 const ALLOWED_FIELDS = ['company', 'role', 'status', 'appliedDate', 'deadline', 'notes'];
+
+// Resume file names we create look like 32 hex characters + .pdf/.doc/.docx
+// (moved to the top because both download and delete use them)
+const SAFE_RESUME_NAME = /^[a-f0-9]{32}\.(pdf|docx|doc)$/;
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 
 const pickAllowed = (body) => {
   const data = {};
@@ -92,6 +98,21 @@ exports.deleteApplication = async (req, res) => {
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
+
+    // NEW: clean up what belonged to this application.
+    // 1) Its interviews
+    await Interview.deleteMany({ application: application._id });
+
+    // 2) Its resume file, only if the name is one of our own random names.
+    // A missing file or any file error must not stop the delete from succeeding.
+    if (application.resumeFileName && SAFE_RESUME_NAME.test(application.resumeFileName)) {
+      try {
+        await fs.promises.unlink(path.join(UPLOADS_DIR, application.resumeFileName));
+      } catch (fileError) {
+        if (fileError.code !== 'ENOENT') console.error('Could not delete resume file:', fileError.message);
+      }
+    }
+
     res.json({ message: 'Application deleted' });
   } catch (error) {
     handleError(error, res);
@@ -124,10 +145,6 @@ exports.uploadResume = async (req, res) => {
     handleError(error, res);
   }
 };
-
-// Resume file names we create look like 32 hex characters + .pdf/.doc/.docx
-const SAFE_RESUME_NAME = /^[a-f0-9]{32}\.(pdf|docx|doc)$/;
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 
 // GET /api/applications/:id/resume  -> download the resume of one application
 exports.downloadResume = async (req, res) => {
@@ -162,7 +179,7 @@ exports.downloadResume = async (req, res) => {
     }
 
     res.set('X-Content-Type-Options', 'nosniff');
-    res.set('Cache-Control', 'private, no-store'); // NEW: a resume is private, so browsers must not store it
+    res.set('Cache-Control', 'private, no-store');
     res.download(fullPath, 'resume' + path.extname(fileName));
   } catch (error) {
     handleError(error, res);
