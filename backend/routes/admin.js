@@ -53,7 +53,14 @@ const SUSPICIOUS_MESSAGES = [
 const THRESHOLD = 3;
 
 router.get('/events', protect, adminOnly, (req, res) => {
-  const entries = readLogEntries();
+  // ?hours=N limits the look-back window (default 24, maximum 720 = 30 days).
+  const requested = parseInt(req.query.hours, 10);
+  const windowHours = requested > 0 ? Math.min(requested, 720) : 24;
+  const cutoff = Date.now() - windowHours * 60 * 60 * 1000;
+  const entries = readLogEntries().filter((entry) => {
+    const time = Date.parse(entry.timestamp);
+    return !Number.isNaN(time) && time >= cutoff;
+  });
   const counts = {}; // counts[ip][message] = how many times
 
   entries.forEach((entry) => {
@@ -77,7 +84,7 @@ router.get('/events', protect, adminOnly, (req, res) => {
   });
 
   events.sort((a, b) => b.count - a.count); // most suspicious first
-  res.json({ count: events.length, events });
+  res.json({ count: events.length, windowHours, events });
 });
 
 module.exports = router;
