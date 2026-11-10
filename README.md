@@ -16,7 +16,7 @@ A full-stack web app that helps students manage their internship and job applica
 - **Database:** MongoDB Atlas (Mongoose)
 - **Frontend:** React (Vite)
 - **Auth:** JWT (JSON Web Token), passwords hashed with bcryptjs
-- **Security:** express-validator, express-rate-limit, multer, Winston (security log), Morgan (request log)
+- **Security:** express-validator, express-rate-limit, helmet, multer, Winston (security log), Morgan (request log)
 
 ## Project Structure
 
@@ -102,14 +102,15 @@ All responses are JSON. Protected routes require the header `Authorization: Bear
 - **JWT:** every protected route verifies the token and loads the user from the database; the role always comes from the database, never from the token.
 - **Ownership:** users can only read, change, delete or download their own applications, interviews and resumes.
 - **Input validation:** register, login, create application and update application are validated; bad input gets `400` with `{ message: "Validation failed", errors: [...] }`.
-- **Rate limits:** 5 login attempts per IP per 15 minutes; 100 API requests per IP per 15 minutes. Blocked requests get `429`.
+- **Rate limits:** 5 failed login attempts per IP per 15 minutes (successful logins are not counted); 100 API requests per IP per 15 minutes. Blocked requests get `429`.
+- **Security headers:** Helmet sets headers such as `X-Content-Type-Options` and `X-Frame-Options` and hides `X-Powered-By`; Cross-Origin-Resource-Policy is `same-site` so the frontend on another port can load files from the API.
 - **Resume uploads:** PDF, DOC and DOCX only, 5 MB maximum, the file's real content is checked (not just its extension), and it is saved under a random name.
 - **Logging:** security events (failed logins, invalid tokens, denied admin access, rejected uploads, rate-limit hits, server errors) are written to `backend/logs/security.log`. Admins can read them through `/api/admin/logs` and `/api/admin/events`.
 
 ## Known Limits
 
 - `security.log` has no size limit or rotation yet.
-- CORS currently allows any origin and no Helmet security headers are set; both are planned before deployment.
+- CORS currently allows any origin; it is planned to be limited to the frontend address before deployment.
 - Admin accounts cannot be created through the API. An admin's `role` is set directly in the database.
 
 ## Notes
