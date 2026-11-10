@@ -30,6 +30,11 @@ exports.register = async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
+    // NEW: two sign-ups with the same email at the same moment both pass the check above,
+    // and the database's unique index rejects the second. Give the same 400 reply.
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
