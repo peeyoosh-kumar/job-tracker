@@ -8,6 +8,10 @@ const { logger } = require('./middleware/logger'); // NEW: lets this file write 
 
 const app = express();
 
+// Trust the first proxy in front of the app (needed on hosting platforms),
+// so req.ip and the rate limiters use the real visitor address
+app.set('trust proxy', 1);
+
 // Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected successfully'))
