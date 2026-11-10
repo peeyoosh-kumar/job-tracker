@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { logger } = require('./middleware/logger'); // NEW: lets this file write to security.log
 
@@ -11,6 +12,10 @@ const app = express();
 // Trust the first proxy in front of the app (needed on hosting platforms),
 // so req.ip and the rate limiters use the real visitor address
 app.set('trust proxy', 1);
+
+// Security headers (Helmet). Cross-Origin-Resource-Policy is "same-site" so the
+// frontend on another port (Vite) can still load files such as resumes from this API
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
 
 // Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI)
