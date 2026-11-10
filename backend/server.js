@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const { apiLimiter } = require('./middleware/rateLimiter');
+const { logger } = require('./middleware/logger'); // NEW: lets this file write to security.log
 
 const app = express();
 
@@ -52,6 +53,8 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ message: 'Invalid JSON in request body' });
   }
   console.error(err);
+  // NEW: also record it in security.log (message, path and IP only, never the request body)
+  logger.error('Server error', { error: err.message, path: req.originalUrl, ip: req.ip });
   res.status(500).json({ message: 'Server error' });
 });
 

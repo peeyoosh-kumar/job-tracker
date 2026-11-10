@@ -55,7 +55,7 @@ exports.updateApplication = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    // NEW: the validator treats an empty status or appliedDate as "not sent",
+    // The validator treats an empty status or appliedDate as "not sent",
     // so remove them here. Otherwise they would be written to the database.
     const updates = pickAllowed(req.body);
     if (!updates.status) delete updates.status;
@@ -162,6 +162,7 @@ exports.downloadResume = async (req, res) => {
     }
 
     res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Cache-Control', 'private, no-store'); // NEW: a resume is private, so browsers must not store it
     res.download(fullPath, 'resume' + path.extname(fileName));
   } catch (error) {
     handleError(error, res);
