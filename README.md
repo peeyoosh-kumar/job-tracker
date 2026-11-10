@@ -110,7 +110,7 @@ All responses are JSON. Protected routes require the header `Authorization: Bear
 ## Known Limits
 
 - `security.log` has no size limit or rotation yet.
-- CORS currently allows any origin; it is planned to be limited to the frontend address before deployment.
+- CORS allows only the frontend addresses `http://localhost:5173` and `http://127.0.0.1:5173`, plus one deployed address if `FR
 - Admin accounts cannot be created through the API. An admin's `role` is set directly in the database.
 
 ## Notes
