@@ -21,7 +21,7 @@ function App() {
   const stored = getStoredAuth();
   const [token, setToken] = useState(stored.token);
   const [user, setUser] = useState(stored.user);
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(true);
   const [view, setView] = useState("applications");
 
   function handleAuthed(newToken, newUser) {
@@ -37,25 +37,34 @@ function App() {
     localStorage.removeItem("user");
     setToken(null);
     setUser(null);
+    setShowLogin(true);
   }
 
   if (token && user) {
     return (
       <div>
-        <h1>Job Application Tracker</h1>
-        <p>Logged in as {user.name} ({user.email})</p>
-        <button onClick={handleLogout}>Logout</button>
+        <div className="topbar">
+          <h1>Job Application Tracker</h1>
+          <div>
+            <span className="who">
+              {user.name} ({user.email}){" "}
+            </span>
+            <button className="secondary" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
+        </div>
 
-        <div style={{ margin: "1em 0" }}>
+        <div className="tabs">
           <button
+            className={view === "applications" ? "active" : ""}
             onClick={() => setView("applications")}
-            disabled={view === "applications"}
           >
             Applications
           </button>
           <button
+            className={view === "dashboard" ? "active" : ""}
             onClick={() => setView("dashboard")}
-            disabled={view === "dashboard"}
           >
             Dashboard
           </button>
@@ -72,15 +81,19 @@ function App() {
 
   return (
     <div>
-      <h1>Job Application Tracker</h1>
-      {showLogin ? (
-        <Login onLoggedIn={handleAuthed} />
-      ) : (
-        <Register onRegistered={handleAuthed} />
-      )}
-      <button onClick={() => setShowLogin(!showLogin)}>
-        {showLogin ? "Need an account? Register" : "Already have an account? Login"}
-      </button>
+      <h1 className="auth-title">Job Application Tracker</h1>
+      <div className="auth-card">
+        {showLogin ? (
+          <Login onLoggedIn={handleAuthed} />
+        ) : (
+          <Register onRegistered={handleAuthed} />
+        )}
+        <div className="auth-switch">
+          <button className="link" onClick={() => setShowLogin(!showLogin)}>
+            {showLogin ? "Need an account? Register" : "Already have an account? Login"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

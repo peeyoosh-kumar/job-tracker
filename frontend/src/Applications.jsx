@@ -10,6 +10,17 @@ const STATUS_OPTIONS = [
   "Rejected",
 ];
 
+function badgeClass(status) {
+  return "badge badge-" + status.toLowerCase().replace(/ /g, "-");
+}
+
+// The backend saves resumes under a random name, so we show a clean label instead
+function resumeLabel(fileName) {
+  if (!fileName) return "none uploaded";
+  const ext = fileName.split(".").pop().toUpperCase();
+  return `Uploaded (${ext} file)`;
+}
+
 function Applications({ token, onAuthError }) {
   const [applications, setApplications] = useState([]);
   const [error, setError] = useState("");
@@ -37,6 +48,7 @@ function Applications({ token, onAuthError }) {
   const [openInterviewsId, setOpenInterviewsId] = useState(null);
   const [resumeFiles, setResumeFiles] = useState({});
   const [uploadingId, setUploadingId] = useState(null);
+  const [fileInputKeys, setFileInputKeys] = useState({});
 
   async function loadApplications() {
     try {
@@ -160,6 +172,8 @@ function Applications({ token, onAuthError }) {
         formData,
       });
       setResumeFiles((prev) => ({ ...prev, [id]: null }));
+      // a new key makes React create a fresh, empty file picker
+      setFileInputKeys((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
       await loadApplications();
     } catch (err) {
       handleActionError(err);
@@ -169,62 +183,64 @@ function Applications({ token, onAuthError }) {
   }
 
   if (loading) return <p>Loading applications...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (error) return <p className="error">{error}</p>;
 
   return (
     <div>
-      <h2>Add Application</h2>
-      <form onSubmit={handleAddApplication}>
-        <div>
-          <label>Company: </label>
-          <input value={company} onChange={(e) => setCompany(e.target.value)} required />
-        </div>
-        <div>
-          <label>Role: </label>
-          <input value={role} onChange={(e) => setRole(e.target.value)} required />
-        </div>
-        <div>
-          <label>Status: </label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label>Deadline: </label>
-          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-        </div>
-        <div>
-          <label>Notes: </label>
-          <input value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Adding..." : "Add Application"}
-        </button>
-      </form>
-      {formError && <p style={{ color: "red" }}>{formError}</p>}
+      <div className="panel">
+        <h2>Add Application</h2>
+        <form onSubmit={handleAddApplication}>
+          <div>
+            <label>Company</label>
+            <input value={company} onChange={(e) => setCompany(e.target.value)} required />
+          </div>
+          <div>
+            <label>Role</label>
+            <input value={role} onChange={(e) => setRole(e.target.value)} required />
+          </div>
+          <div>
+            <label>Status</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>Deadline</label>
+            <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+          </div>
+          <div>
+            <label>Notes</label>
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <button type="submit" disabled={submitting}>
+            {submitting ? "Adding..." : "Add Application"}
+          </button>
+        </form>
+        {formError && <p className="error">{formError}</p>}
+      </div>
 
       <h2>My Applications</h2>
-      {actionError && <p style={{ color: "red" }}>{actionError}</p>}
+      {actionError && <p className="error">{actionError}</p>}
       {applications.length === 0 ? (
         <p>No applications yet.</p>
       ) : (
-        <ul>
+        <ul className="list">
           {applications.map((app) => (
-            <li key={app._id} style={{ marginBottom: "1.5em" }}>
+            <li key={app._id} className="card">
               {editingId === app._id ? (
-                <div>
+                <div className="edit">
                   <div>
-                    <label>Company: </label>
+                    <label>Company</label>
                     <input value={editCompany} onChange={(e) => setEditCompany(e.target.value)} />
                   </div>
                   <div>
-                    <label>Role: </label>
+                    <label>Role</label>
                     <input value={editRole} onChange={(e) => setEditRole(e.target.value)} />
                   </div>
                   <div>
-                    <label>Status: </label>
+                    <label>Status</label>
                     <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>{s}</option>
@@ -232,49 +248,64 @@ function Applications({ token, onAuthError }) {
                     </select>
                   </div>
                   <div>
-                    <label>Deadline: </label>
+                    <label>Deadline</label>
                     <input type="date" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} />
                   </div>
                   <div>
-                    <label>Notes: </label>
+                    <label>Notes</label>
                     <input value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
                   </div>
                   <button onClick={() => handleSaveEdit(app._id)}>Save</button>
-                  <button onClick={cancelEdit}>Cancel</button>
+                  <button className="secondary" onClick={cancelEdit}>Cancel</button>
                 </div>
               ) : (
                 <div>
-                  <div><strong>Company:</strong> {app.company}</div>
-                  <div><strong>Role:</strong> {app.role}</div>
-                  <div><strong>Status:</strong> {app.status}</div>
-                  {app.deadline && (
-                    <div><strong>Deadline:</strong> {new Date(app.deadline).toLocaleDateString()}</div>
-                  )}
-                  {app.notes && <div><strong>Notes:</strong> {app.notes}</div>}
-                  <div>
-                    <strong>Resume:</strong> {app.resumeFileName ? app.resumeFileName : "none uploaded"}
+                  <div className="card-head">
+                    <span className="card-title">{app.company}</span>
+                    <span className={badgeClass(app.status)}>{app.status}</span>
                   </div>
-                  <div>
+                  <div className="row"><strong>Role:</strong> {app.role}</div>
+                  {app.deadline && (
+                    <div className="row">
+                      <strong>Deadline:</strong> {new Date(app.deadline).toLocaleDateString()}
+                    </div>
+                  )}
+                  {app.notes && <div className="row"><strong>Notes:</strong> {app.notes}</div>}
+                  <div className="row">
+                    <strong>Resume:</strong> {resumeLabel(app.resumeFileName)}
+                  </div>
+
+                  <div className="resume">
                     <input
+                      key={`file-${app._id}-${fileInputKeys[app._id] || 0}`}
                       type="file"
                       accept=".pdf,.doc,.docx"
                       onChange={(e) =>
                         setResumeFiles((prev) => ({ ...prev, [app._id]: e.target.files[0] || null }))
                       }
-                    />
-                    <button onClick={() => handleUploadResume(app._id)} disabled={uploadingId === app._id}>
+                    />{" "}
+                    <button
+                      className="secondary"
+                      onClick={() => handleUploadResume(app._id)}
+                      disabled={uploadingId === app._id}
+                    >
                       {uploadingId === app._id ? "Uploading..." : "Upload Resume"}
                     </button>
                   </div>
-                  <button onClick={() => startEdit(app)}>Edit</button>
-                  <button onClick={() => handleDelete(app._id)}>Delete</button>
-                  <button
-                    onClick={() =>
-                      setOpenInterviewsId(openInterviewsId === app._id ? null : app._id)
-                    }
-                  >
-                    {openInterviewsId === app._id ? "Hide Interviews" : "Interviews"}
-                  </button>
+
+                  <div className="actions">
+                    <button onClick={() => startEdit(app)}>Edit</button>
+                    <button
+                      className="secondary"
+                      onClick={() =>
+                        setOpenInterviewsId(openInterviewsId === app._id ? null : app._id)
+                      }
+                    >
+                      {openInterviewsId === app._id ? "Hide Interviews" : "Interviews"}
+                    </button>
+                    <button className="danger" onClick={() => handleDelete(app._id)}>Delete</button>
+                  </div>
+
                   {openInterviewsId === app._id && (
                     <Interviews token={token} appId={app._id} onAuthError={onAuthError} />
                   )}
