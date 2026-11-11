@@ -49,6 +49,9 @@ job-tracker/
    PORT=5000
    MONGO_URI=your_mongodb_atlas_connection_string
    JWT_SECRET=any_random_long_string
+   # Deployment only (set these in the hosting platform's settings, leave unset locally):
+   # TRUST_PROXY=1
+   # FRONTEND_URL=https://your-deployed-frontend-address
    ```
 4. Run the server (restarts automatically when a file changes):
    ```
