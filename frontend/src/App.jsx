@@ -2,6 +2,7 @@ import { useState } from "react";
 import Register from "./Register";
 import Login from "./Login";
 import Applications from "./Applications";
+import Dashboard from "./Dashboard";
 
 // Reads token/user back out of localStorage when the app first loads.
 // Wrapped in try/catch in case the saved "user" isn't valid JSON for some reason.
@@ -21,12 +22,14 @@ function App() {
   const [token, setToken] = useState(stored.token);
   const [user, setUser] = useState(stored.user);
   const [showLogin, setShowLogin] = useState(false);
+  const [view, setView] = useState("applications");
 
   function handleAuthed(newToken, newUser) {
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
+    setView("applications");
   }
 
   function handleLogout() {
@@ -42,7 +45,27 @@ function App() {
         <h1>Job Application Tracker</h1>
         <p>Logged in as {user.name} ({user.email})</p>
         <button onClick={handleLogout}>Logout</button>
-        <Applications token={token} onAuthError={handleLogout} />
+
+        <div style={{ margin: "1em 0" }}>
+          <button
+            onClick={() => setView("applications")}
+            disabled={view === "applications"}
+          >
+            Applications
+          </button>
+          <button
+            onClick={() => setView("dashboard")}
+            disabled={view === "dashboard"}
+          >
+            Dashboard
+          </button>
+        </div>
+
+        {view === "dashboard" ? (
+          <Dashboard token={token} onAuthError={handleLogout} />
+        ) : (
+          <Applications token={token} onAuthError={handleLogout} />
+        )}
       </div>
     );
   }
