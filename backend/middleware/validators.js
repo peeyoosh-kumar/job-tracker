@@ -25,7 +25,7 @@ const registerValidation = [
     .trim()
     .isEmail()
     .withMessage('A valid email is required')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   // 6 is the model's minimum (see models/User.js). If this ever becomes
   // stricter, Peeyoosh and Yogesh must be told so the frontend form matches.
   body('password')
@@ -39,7 +39,7 @@ const loginValidation = [
     .trim()
     .isEmail()
     .withMessage('A valid email is required')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   body('password').notEmpty().withMessage('Password is required'),
   handleValidationErrors,
 ];
