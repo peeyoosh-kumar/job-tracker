@@ -9,9 +9,14 @@ const { logger } = require('./middleware/logger'); // NEW: lets this file write 
 
 const app = express();
 
-// Trust the first proxy in front of the app (needed on hosting platforms),
-// so req.ip and the rate limiters use the real visitor address
-app.set('trust proxy', 1);
+// Trust a proxy only when the app really runs behind one (hosting platforms).
+// On the host, set TRUST_PROXY=1 in its environment settings; leave it unset locally.
+// Why: with no proxy in front, a client could send its own X-Forwarded-For header
+// and look like a different IP every time, which would dodge the rate limiters.
+const proxyHops = parseInt(process.env.TRUST_PROXY, 10);
+if (proxyHops > 0) {
+  app.set('trust proxy', proxyHops);
+}
 
 // Security headers (Helmet). Cross-Origin-Resource-Policy is "same-site" so the
 // frontend on another port (Vite) can still load files such as resumes from this API
