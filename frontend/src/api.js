@@ -34,3 +34,27 @@ export async function apiRequest(path, { method = "GET", body, formData, token }
 
   return data;
 }
+
+// Downloads a file (like a resume). Returns the file as a "blob".
+// Needs the token, which is why a plain <a href> link would not work.
+export async function apiDownload(path, { token } = {}) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+
+  if (!res.ok) {
+    let message = "Download failed";
+    try {
+      const data = await res.json();
+      message = data.message || message;
+    } catch {
+      // the error reply wasn't JSON, so keep the default message
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+
+  return res.blob();
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { apiRequest } from "./api";
+import { apiRequest, apiDownload } from "./api";
 import Interviews from "./Interviews";
 
 const STATUS_OPTIONS = [
@@ -182,6 +182,23 @@ function Applications({ token, onAuthError }) {
     }
   }
 
+  // Fetches the resume with the token, then saves it as a file in the browser
+  async function handleDownload(app) {
+    setActionError("");
+    try {
+      const blob = await apiDownload(`/applications/${app._id}/resume`, { token });
+      const ext = app.resumeFileName.slice(app.resumeFileName.lastIndexOf("."));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "resume" + ext;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      handleActionError(err);
+    }
+  }
+
   if (loading) return <p>Loading applications...</p>;
   if (error) return <p className="error">{error}</p>;
 
@@ -291,6 +308,11 @@ function Applications({ token, onAuthError }) {
                     >
                       {uploadingId === app._id ? "Uploading..." : "Upload Resume"}
                     </button>
+                    {app.resumeFileName && (
+                      <button className="secondary" onClick={() => handleDownload(app)}>
+                        Download Resume
+                      </button>
+                    )}
                   </div>
 
                   <div className="actions">
