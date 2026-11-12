@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { apiRequest } from "./api";
 
 function Register({ onRegistered }) {
@@ -7,6 +7,18 @@ function Register({ onRegistered }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // handles to the next boxes, so Enter can jump forward
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+
+  // Enter on this box moves to nextRef instead of submitting the form
+  function moveOnEnter(e, nextRef) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      nextRef.current.focus();
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -33,7 +45,11 @@ function Register({ onRegistered }) {
       <form onSubmit={handleSubmit}>
         <div>
           <label>Name: </label>
-          <input value={name} onChange={(e) => setName(e.target.value)} />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => moveOnEnter(e, emailRef)}
+          />
         </div>
         <div>
           <label>Email: </label>
@@ -41,6 +57,8 @@ function Register({ onRegistered }) {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => moveOnEnter(e, passwordRef)}
+            ref={emailRef}
           />
         </div>
         <div>
@@ -49,13 +67,14 @@ function Register({ onRegistered }) {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            ref={passwordRef}
           />
         </div>
         <button type="submit" disabled={loading}>
           {loading ? "Registering..." : "Register"}
         </button>
       </form>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }
