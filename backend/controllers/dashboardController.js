@@ -27,6 +27,19 @@ exports.getDashboard = async (req, res) => {
       totalApplications += item.count;
     });
 
+    // Phase 2: success rates as whole percentages, based on each application's CURRENT status.
+    // With no applications every rate is 0 (this also avoids dividing by zero).
+    const toPercent = (part) =>
+      totalApplications === 0 ? 0 : Math.round((part / totalApplications) * 100);
+
+    const responded = totalApplications - statusCounts['Applied'];
+    const interviewed =
+      statusCounts['Interview Scheduled'] + statusCounts['Interviewed'] + statusCounts['Offer'];
+
+    const responseRate = toPercent(responded);
+    const interviewRate = toPercent(interviewed);
+    const offerRate = toPercent(statusCounts['Offer']);
+
     // 2. Count interviews that are still in the future.
     // Interviews link to applications, so first get this user's application ids.
     const applicationIds = await Application.distinct('_id', { user: userId });
@@ -44,7 +57,15 @@ exports.getDashboard = async (req, res) => {
       .limit(5)
       .select('company role status deadline');
 
-    res.json({ totalApplications, statusCounts, upcomingInterviews, upcomingDeadlines });
+    res.json({
+      totalApplications,
+      statusCounts,
+      responseRate,
+      interviewRate,
+      offerRate,
+      upcomingInterviews,
+      upcomingDeadlines
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
