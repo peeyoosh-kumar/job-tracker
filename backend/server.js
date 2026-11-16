@@ -57,6 +57,9 @@ app.use('/api/interviews', require('./routes/interviews'));
 // Dashboard route: summary statistics (login required)
 app.use('/api/dashboard', require('./routes/dashboard'));
 
+// Notifications route: deadline and follow-up alerts (login required)
+app.use('/api/notifications', require('./routes/notifications'));
+
 // Admin routes: security/audit logs and suspicious activity (admin only)
 app.use('/api/admin', require('./routes/admin'));
 
