@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const Application = require('../models/Application');
 require('../models/User'); // registers the User model so populate('user') works
 const { sendMail } = require('../utils/mailer');
+const { logger } = require('../middleware/logger'); // NEW: writes events to security.log
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FINISHED_STATUSES = ['Offer', 'Rejected'];
@@ -78,9 +79,13 @@ async function runReminderJob(now = new Date()) {
       );
       sent++;
       if (result.previewUrl) previews.push(result.previewUrl);
+      // NEW: user id and count only, never the email address or email text
+      logger.info('Reminder email sent', { userId: String(user._id), applications: apps.length });
     } catch (err) {
       failed++;
       console.error('Reminder email failed:', err.message);
+      // NEW: user id and error message only
+      logger.error('Reminder job failed', { userId: String(user._id), error: err.message });
     }
   }
 
@@ -95,6 +100,7 @@ async function safeRun(label) {
     console.log('Reminder job (' + label + '): users=' + r.users + ', sent=' + r.sent + ', failed=' + r.failed);
   } catch (err) {
     console.error('Reminder job failed:', err.message);
+    logger.error('Reminder job failed', { error: err.message }); // NEW
   } finally {
     running = false;
   }
