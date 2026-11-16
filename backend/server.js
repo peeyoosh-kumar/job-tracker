@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { logger } = require('./middleware/logger'); // NEW: lets this file write to security.log
+const { startReminderJob } = require('./services/reminderJob'); // NEW: daily deadline reminder emails
 
 const app = express();
 
@@ -83,4 +84,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  startReminderJob(); // NEW: schedules the daily 09:00 reminder run (only if EMAIL_USER is set)
 });
