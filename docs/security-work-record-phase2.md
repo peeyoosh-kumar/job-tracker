@@ -2,7 +2,7 @@
 **Project:** Secure Internship & Job Application Tracker (DIT University Dehradun)
 **Author:** Ankush Jha (security) · **Branch:** `ankush-phase2` · **Repo:** `peeyoosh-kumar/job-tracker` (public)
 **Base:** `main` at `5abac1a` (Peeyoosh's Phase 2 merged). Safe old version: tag `v1-final` (`838532d`).
-**Status:** written at about 16:25 IST on 17 Nov. It contains only results I ran and pasted. Results reported by Peeyoosh are marked *his claim*.
+**Status:** written at about 16:35 IST on 17 Nov. It contains only results I ran and pasted. Results reported by Peeyoosh are marked *his claim*.
 
 **Labels:** *tested live* (run against the real running server, output shown), *tested offline* (stub or simulated), *checked in code only* (read in the source, not run), *his claim* (reported by Peeyoosh, not run by me), *not tested*. In report Table 7.1 my rows use "Live (Ankush)".
 
@@ -22,7 +22,7 @@ Only `routes/admin.js` was edited in code. My three helper scripts (`check-role.
 - Server started on `ankush-phase2` with `npm run dev` (started 11:45 IST, left running; its reminder job was off because `EMAIL_USER` was not set when it started). Startup lines seen: `Server running on port 5000`, `Reminder job not started (EMAIL_USER is not set)`, `MongoDB connected successfully`.
 - `npm ci` run first (old `node_modules` lacked `node-cron` and `nodemailer`). Installed: `helmet` 8.3.0, `mongoose` 9.12.1, `multer` 2.5.0, `node-cron` 4.6.0, `nodemailer` 10.6.0. `npm ci` reported 2 moderate findings. I did **not** run `npm audit` myself today.
 - My `.env` points to Peeyoosh's shared Atlas cluster (`job-tracker` database), so he changes roles. Test accounts created: `ankush-p2-user`, `ankush-p2-admin`, `ankush-p2b-user`, `ankush-p2b-admin` (all `@example.com`). Only `ankush-p2-admin` was promoted by him.
-- Reminder tests used a free Ethereal fake inbox (credentials only in my local `.env`, never committed or pasted). Peeyoosh agreed to the test run against his database after first declining.
+- Ethereal preview pages are public (anyone with the URL can open them), so I only opened previews of my own test user's email. Reminder tests used a free Ethereal fake inbox (credentials only in my local `.env`, never committed or pasted). Peeyoosh agreed to the test run against his database after first declining.
 
 ## 3. Task 1: `GET /api/admin/summary?hours=24`
 
@@ -72,7 +72,7 @@ Fix: `const requested = parseInt(req.query.limit, 10); const limit = requested >
 | R7 | Secret search over `838532d..HEAD` (4 patterns, see below) | Only placeholders and public host names | tested live (patterns only) |
 | R8 | `.env.example` has placeholders only | Read in full, placeholders only | checked in code only |
 | R9 | User A cannot see user B's items in `/api/notifications` | Two normal users, one application each (deadline tomorrow): A saw only "P2 Isolation Test Co A", B saw only "P2 Isolation Test Co B". Matches the code (`Application.find({ user: userId })`, `userId` = `req.user._id` from `protect`). Limit: two users, notifications route only | tested live |
-| R10 | Reminder email is plain text, subject has only a count, no password/hash/token in body | Code: `text` only, no `html`; subject is a count; `populate` fetches only name and email. I did not record what the delivered email looked like | checked in code only |
+| R10 | Reminder email: subject has only a count; body has only name, role, company and deadline; no password, token or hash | Delivered email viewed in the Ethereal preview (16:32 IST): subject `Job Tracker: 1 deadline(s) coming up`; body is the greeting with the name, one line `Intern at P2 Reminder Test Co 2: deadline tomorrow (Wed Nov 18 2026)` and a closing line; recipient is the application owner. The From header shows the mail account address (by design). That the message has only a plain-text part is from the code (`text` only, no `html`); I did not check the Source tab | tested live (subject and body); checked in code only (plain-text-only part) |
 | R11 | Reminder sent once per application per day | Run 1: `Users with reminders` 1, `Emails sent` 1, `Emails failed` 0. Run 2 right after: 0, 0, 0 | tested live |
 | R12 | Failed send leaves the application eligible (retry) | Two failed runs in a row (rejected mail login) both reported `Users with reminders: 1`, so the application was not marked as reminded after a failure. Code: `updateMany` runs only after `sendMail` returns | tested live |
 | R13 | Mailer errors do not print the mail password | After a rejected login, I read `EMAIL_PASS` from `.env` (length 20) and checked that it appears neither in the console output nor in `security.log` (both `False`). Only for this error type; other mail errors (timeout, refused connection) not tested | tested live (rejected login only) |
@@ -117,15 +117,14 @@ Limit: this finds only these patterns; it does not prove that no secret exists a
 
 ## 9. Still to do
 
-1. Look at the delivered email in the Ethereal preview and note: subject, plain text, only name/role/company/deadline. Until then R10 stays *checked in code only*.
-2. Tell Peeyoosh I am finished, so he sets `ankush-p2-admin` back to `user`.
-3. Update Chapter 6 (6.x.3 and 6.x.4) and the Table 7.1 rows.
-4. Repeat the secret search (R7), `git status`, push this record (outside the backend code) and any final change with a normal `git push`. Final version due Wed 18 Nov, 12:00.
-5. After the final push, delete the `.env` copy that points to Peeyoosh's cluster (his request). He keeps my four test accounts until after the screenshots and will change the database password after submission.
+1. ~~Look at the delivered email~~ done (R10).
+2. ~~Message Peeyoosh~~ sent at 16:32 IST with the final commit and the request to set `ankush-p2-admin` back to `user`. Waiting for his merge and confirmation.
+3. Update Chapter 6 (6.x.3 and 6.x.4) and the Table 7.1 rows in the report.
+4. Final version due Wed 18 Nov, 12:00. If this record changes again, repeat the secret search before pushing (normal `git push` only).
 
 ## 10. Cleanup state
 
 - Isolation-test applications (ids ending `...58a2` and `...58a3`) and the two reminder-test applications (ids ending `...d48d` and `...d48e`) were created and then deleted by their owner; no test applications remain.
-- The four `EMAIL_*` lines were removed from my `.env`; the reminder job was never started by the server.
+- The four `EMAIL_*` lines were removed from my `.env`, and the whole `backend/.env` (pointing to Peeyoosh's cluster) was deleted at 16:31 IST at his request; the reminder job was never started by the server.
 - Test accounts remain in Peeyoosh's database (his decision).
 - No passwords, tokens, mail credentials or `.env` values are recorded in this file.
