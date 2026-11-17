@@ -58,6 +58,9 @@ function Applications({ token, onAuthError, onChanged }) {
   const [actionError, setActionError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // ids of applications that the backend says need a follow-up
+  const [followupIds, setFollowupIds] = useState([]);
+
   // add form
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
@@ -87,10 +90,25 @@ function Applications({ token, onAuthError, onChanged }) {
     if (onChanged) onChanged();
   }
 
+  // Asks the backend which applications need a follow-up.
+  // The chip is optional, so if this fails we just show no chips.
+  async function loadFollowups() {
+    try {
+      const data = await apiRequest("/notifications", { token });
+      const items = Array.isArray(data.items) ? data.items : [];
+      setFollowupIds(
+        items.filter((i) => i.type === "followup").map((i) => String(i.applicationId))
+      );
+    } catch {
+      setFollowupIds([]);
+    }
+  }
+
   async function loadApplications() {
     try {
       const data = await apiRequest("/applications", { token });
       setApplications(data);
+      await loadFollowups();
     } catch (err) {
       if (err.status === 401) {
         onAuthError();
@@ -288,6 +306,7 @@ function Applications({ token, onAuthError, onChanged }) {
             const dl = deadlineInfo(app);
             // Old applications may have no history at all, so we never assume it exists.
             const history = Array.isArray(app.statusHistory) ? app.statusHistory : [];
+            const needsFollowup = followupIds.includes(String(app._id));
 
             return (
               <li key={app._id} className="card">
@@ -324,7 +343,10 @@ function Applications({ token, onAuthError, onChanged }) {
                   <div>
                     <div className="card-head">
                       <span className="card-title">{app.company}</span>
-                      <span className={badgeClass(app.status)}>{app.status}</span>
+                      <span className="head-badges">
+                        {needsFollowup && <span className="chip-followup">Follow up</span>}
+                        <span className={badgeClass(app.status)}>{app.status}</span>
+                      </span>
                     </div>
                     <div className="row"><strong>Role:</strong> {app.role}</div>
                     {app.deadline && (
