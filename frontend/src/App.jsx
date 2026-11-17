@@ -3,6 +3,7 @@ import Register from "./Register";
 import Login from "./Login";
 import Applications from "./Applications";
 import Dashboard from "./Dashboard";
+import NotificationBell from "./NotificationBell";
 
 // Reads token/user back out of localStorage when the app first loads.
 // Wrapped in try/catch in case the saved "user" isn't valid JSON for some reason.
@@ -23,6 +24,8 @@ function App() {
   const [user, setUser] = useState(stored.user);
   const [showLogin, setShowLogin] = useState(true);
   const [view, setView] = useState("applications");
+  // Goes up by 1 whenever applications change, so the bell loads fresh alerts.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   function handleAuthed(newToken, newUser) {
     localStorage.setItem("token", newToken);
@@ -40,12 +43,22 @@ function App() {
     setShowLogin(true);
   }
 
+  function handleChanged() {
+    setRefreshKey((k) => k + 1);
+  }
+
   if (token && user) {
     return (
       <div>
         <div className="topbar">
           <h1>Job Application Tracker</h1>
-          <div>
+          <div className="topbar-right">
+            <NotificationBell
+              token={token}
+              onAuthError={handleLogout}
+              onOpenApplications={() => setView("applications")}
+              refreshKey={refreshKey}
+            />
             <span className="who">
               {user.name} ({user.email}){" "}
             </span>
@@ -73,7 +86,11 @@ function App() {
         {view === "dashboard" ? (
           <Dashboard token={token} onAuthError={handleLogout} />
         ) : (
-          <Applications token={token} onAuthError={handleLogout} />
+          <Applications
+            token={token}
+            onAuthError={handleLogout}
+            onChanged={handleChanged}
+          />
         )}
       </div>
     );
