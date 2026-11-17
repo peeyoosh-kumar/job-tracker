@@ -1,6 +1,6 @@
 # Secure Internship & Job Application Tracker
 
-A full-stack web app that helps students manage their internship and job applications: track application status, record interview details, store resumes, and see everything in one dashboard. It includes security features: secure authentication, input validation, rate limiting, secure file uploads, and security logging. Phase 2 adds deadline notifications, daily email reminders, a status history for each application, and success rates on the dashboard.
+A full-stack web app that helps students manage their internship and job applications: track application status, record interview details, store resumes, and see everything in one dashboard. It includes security features: secure authentication, input validation, rate limiting, secure file uploads, and security logging. Phase 2 adds deadline notifications, daily email reminders, a status history for each application, success rates on the dashboard, and an admin security summary.
 
 ## Team
 
@@ -35,6 +35,7 @@ job-tracker/
 │   ├── logs/          security.log (not tracked by Git)
 │   ├── .env.example   template for the .env file (placeholders only)
 │   └── server.js
+├── docs/              security work record for Phase 2
 ├── frontend/          React app
 └── README.md
 ```
@@ -115,8 +116,9 @@ All responses are JSON. Protected routes require the header `Authorization: Bear
 | POST | /api/interviews/:appId | Add interview details | Backend |
 | GET | /api/dashboard | Summary counts, plus `responseRate`, `interviewRate` and `offerRate` | Backend |
 | GET | /api/notifications | Deadline and follow-up alerts for the logged-in user | Backend |
-| GET | /api/admin/logs | Security/audit log list (admin only) | Security |
+| GET | /api/admin/logs | Security/audit log list (admin only); optional `?limit=N`, default 200, maximum 1000 | Security |
 | GET | /api/admin/events | Suspicious activity (admin only); optional `?hours=N`, default 24, maximum 720 | Security |
+| GET | /api/admin/summary | Totals of failed logins, rate-limit hits, denied admin attempts and invalid tokens in a time window (admin only); optional `?hours=N`, default 24, maximum 720 | Security |
 
 **Rule:** nobody changes an endpoint name or shape without telling the other two team members.
 
@@ -128,23 +130,24 @@ All responses are JSON. Protected routes require the header `Authorization: Bear
 { "count": 1, "items": [
   { "type": "deadline", "severity": "warning", "applicationId": "...",
     "company": "ABC", "role": "Intern", "dueDate": "2026-11-18",
-    "daysLeft": 2, "message": "Deadline in 2 days: Intern at ABC" } ] }
+    "daysLeft": 2, "message": "Deadline for Intern at ABC is in 2 days" } ] }
 ```
 
 - `type` is `deadline` or `followup`.
-- `severity` is `danger` (deadline already passed), `warning` (deadline coming up) or `info` (follow-up).
-- `daysLeft` is `null` for follow-ups. `dueDate` is a date, not a time.
+- A deadline within the next 3 days gives severity `warning`. A deadline that has already passed gives `danger`. A follow-up gives `info`.
+- A follow-up alert appears for an application that is still Applied more than 7 days after the applying date.
+- `daysLeft` is `null` for follow-ups. `dueDate` is a date, not a time (for a follow-up it holds the applying date).
 - Applications with status Offer or Rejected are skipped.
-- A follow-up alert appears for an application that has been in status Applied for more than 7 days.
+- The most urgent alerts come first: danger, then warning, then info, then fewest days left.
 
 ### Status history and dashboard rates
 
-- Every application has `statusHistory`, a list of `{ status, changedAt }`. The first status is saved when the application is created, and a new entry is added only when the status really changes. Older applications may have an empty list.
+- Every application has `statusHistory`, a list of `{ status, changedAt }`. The first status is saved when the application is created, and a new entry is added only when the status really changes. An older application with no history gets its old status saved first when its status is edited for the first time. Until then the list may be empty.
 - The dashboard rates are whole percentages (0 when there are no applications). Response rate = status is not Applied. Interview rate = Interview Scheduled, Interviewed or Offer. Offer rate = Offer. Each is divided by the total number of applications.
 
 ## Email Reminders
 
-- The reminder job finds applications that are not Offer or Rejected and have a deadline from today up to 2 days ahead. It sends one plain-text email per user and then records `lastReminderSent`, so the same application is not reminded twice on the same day.
+- The reminder job finds applications that are not Offer or Rejected and have a deadline from today up to 2 days ahead. It sends one plain-text email per user and then records `lastReminderSent`, so the same application is not reminded twice on the same day. A failed send does not record it, so the next run tries again. Overdue deadlines are not included in the email (they appear in the notifications).
 - It runs every day at 09:00 (timezone Asia/Kolkata) and once when the server starts. It starts only if `EMAIL_USER` is set in `.env`.
 - To run it by hand (from the `backend` folder):
   ```
@@ -152,7 +155,7 @@ All responses are JSON. Protected routes require the header `Authorization: Bear
   ```
   The script prints the number of users, emails sent and failed, and a Preview link when a test inbox is used.
 - Events "Reminder email sent" and "Reminder job failed" are written to `security.log`. Email addresses and passwords are never logged.
-- For testing, create a free fake inbox at https://ethereal.email and put its SMTP details in `.env`. Emails are not delivered to a real inbox; you open the Preview link instead. Using a real mail account only needs different `.env` values (not tested yet).
+- For testing, create a free fake inbox at https://ethereal.email and put its SMTP details in `.env`. Emails are not delivered to a real inbox; you open the Preview link instead. The job works on every user's applications in the database, so do not point `EMAIL_HOST` at a real mail server while the database holds other people's data. Using a real mail account only needs different `.env` values (not tested).
 
 ## Security Features
 
@@ -164,14 +167,16 @@ All responses are JSON. Protected routes require the header `Authorization: Bear
 - **Security headers:** Helmet sets headers such as `X-Content-Type-Options` and `X-Frame-Options` and hides `X-Powered-By`; Cross-Origin-Resource-Policy is `same-site` so the frontend on another port can load files from the API.
 - **Resume uploads:** PDF, DOC and DOCX only, 5 MB maximum, the file's real content is checked (not just its extension), and it is saved under a random name.
 - **Email:** plain text only (no user text inside HTML); the mail password is read from `.env` and never printed.
-- **Logging:** security events (failed logins, invalid tokens, denied admin access, rejected uploads, rate-limit hits, server errors, reminder emails sent or failed) are written to `backend/logs/security.log`. Admins can read them through `/api/admin/logs` and `/api/admin/events`.
+- **Logging:** security events (failed logins, invalid tokens, denied admin access, rejected uploads, rate-limit hits, server errors, reminder emails sent or failed) are written to `backend/logs/security.log`. Admins can read them through `/api/admin/logs`, `/api/admin/events` and `/api/admin/summary`.
 
 ## Known Limits
 
-- `security.log` has no size limit or rotation yet.
+- `security.log` has no size limit or rotation yet. It is a local file on each machine.
 - CORS allows only the frontend addresses `http://localhost:5173` and `http://127.0.0.1:5173`, plus one deployed address if `FRONTEND_URL` is set in `.env`.
 - Admin accounts cannot be created through the API. An admin's `role` is set directly in the database.
 - The daily reminder is a timer inside the server, so it only runs while the server is running. It also runs once at startup, and can be run by hand.
+- An overdue deadline alert stays until the application status becomes Offer or Rejected.
+- The email reminder covers deadlines up to 2 days ahead and skips overdue ones, while the notifications cover 3 days ahead and include overdue ones.
 - There is no "interview within 48 hours" notification, because an application has no interview date of its own.
 - Browser pop-up notifications while the tab is closed (web push) need a deployed HTTPS site, so they are future work.
 - Reminder emails were tested with Ethereal (a fake inbox), not with a real mail account.
@@ -180,3 +185,4 @@ All responses are JSON. Protected routes require the header `Authorization: Bear
 
 - Never commit `.env`: it holds secrets and is listed in `.gitignore`. Anyone who has seen it should change the database password and `JWT_SECRET`.
 - Security middleware lives in `backend/middleware/` as separate files that plug into the Express routes.
+- The security tests of Phase 2 are written up in `docs/security-work-record-phase2.md`.
