@@ -36,7 +36,8 @@ function readLogEntries() {
 // Returns the most recent log entries, newest first. Capped so a huge log
 // file, months from now, can't slow down the request.
 router.get('/logs', protect, adminOnly, (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit, 10) || 200, 1000);
+   const requested = parseInt(req.query.limit, 10);
+  const limit = requested > 0 ? Math.min(requested, 1000) : 200;
   const entries = readLogEntries().reverse().slice(0, limit);
   res.json({ count: entries.length, logs: entries });
 });
