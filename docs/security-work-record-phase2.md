@@ -2,7 +2,7 @@
 **Project:** Secure Internship & Job Application Tracker (DIT University Dehradun)
 **Author:** Ankush Jha (security) · **Branch:** `ankush-phase2` · **Repo:** `peeyoosh-kumar/job-tracker` (public)
 **Base:** `main` at `5abac1a` (Peeyoosh's Phase 2 merged). Safe old version: tag `v1-final` (`838532d`).
-**Status:** written at about 16:35 IST on 17 Nov. It contains only results I ran and pasted. Results reported by Peeyoosh are marked *his claim*.
+**Status:** written at about 16:45 IST on 17 Nov. It contains only results I ran and pasted. Results reported by Peeyoosh are marked *his claim*.
 
 **Labels:** *tested live* (run against the real running server, output shown), *tested offline* (stub or simulated), *checked in code only* (read in the source, not run), *his claim* (reported by Peeyoosh, not run by me), *not tested*. In report Table 7.1 my rows use "Live (Ankush)".
 
@@ -69,7 +69,7 @@ Fix: `const requested = parseInt(req.query.limit, 10); const limit = requested >
 | R4 | `/api/dashboard`, no token | 401 | tested live |
 | R5 | `/api/dashboard`, bad token | 401 | tested live |
 | R6 | `git ls-files \| findstr env` | Only `.env.example` | tested live |
-| R7 | Secret search over `838532d..HEAD` (4 patterns, see below) | Only placeholders and public host names | tested live (patterns only) |
+| R7 | Secret search over the 13 commits added in Phase 2, `838532d..4f7582a` (4 patterns, see below) | Only placeholders and public host names | tested live (patterns only) |
 | R8 | `.env.example` has placeholders only | Read in full, placeholders only | checked in code only |
 | R9 | User A cannot see user B's items in `/api/notifications` | Two normal users, one application each (deadline tomorrow): A saw only "P2 Isolation Test Co A", B saw only "P2 Isolation Test Co B". Matches the code (`Application.find({ user: userId })`, `userId` = `req.user._id` from `protect`). Limit: two users, notifications route only | tested live |
 | R10 | Reminder email: subject has only a count; body has only name, role, company and deadline; no password, token or hash | Delivered email viewed in the Ethereal preview (16:32 IST): subject `Job Tracker: 1 deadline(s) coming up`; body is the greeting with the name, one line `Intern at P2 Reminder Test Co 2: deadline tomorrow (Wed Nov 18 2026)` and a closing line; recipient is the application owner. The From header shows the mail account address (by design). That the message has only a plain-text part is from the code (`text` only, no `html`); I did not check the Source tab | tested live (subject and body); checked in code only (plain-text-only part) |
@@ -85,6 +85,8 @@ Fix: `const requested = parseInt(req.query.limit, 10); const limit = requested >
 2. `ethereal.email | smtp.gmail | app password`: `smtp.ethereal.email` in `.env.example` and `mailer.js`, plus README text. Public host name, not a secret.
 3. Secret assignments (`EMAIL_PASS`, `JWT_SECRET`, `MONGO_URI`): placeholders only.
 4. Committed `.env`, `.log` or `node_modules`: printed nothing.
+
+Repeated at 16:30 IST with my record commit added (`838532d..951faef`, 14 commits): same result, plus one hit on the description of pattern 1 in this record (the placeholder `mongodb+srv://user:pass@`). The last commit changes only the record file, and I ran the same patterns on that file before committing (only that placeholder line).
 
 Limit: this finds only these patterns; it does not prove that no secret exists anywhere. **Repeat before the final push.**
 
@@ -112,7 +114,7 @@ Limit: this finds only these patterns; it does not prove that no secret exists a
 - **First `/summary` count check did not match:** the difference was the 30-day cutoff (section 3, S6), not a code fault.
 - **Two of my predictions were wrong** (default `/logs` count and the size of the negative-limit result), both explained by the log having only 126 lines.
 - **Mail login rejected twice (535):** the first Ethereal credentials in `.env` were not accepted. The failures were useful for R12 and R13, but they were a setup mistake, not a code problem. I replaced the credentials with a fresh account, using a prompt instead of hand-editing.
-- **Another process marked my test application:** a run at about 10:48 UTC (16:18 IST), not by me, set `lastReminderSent` on my first reminder test application, so my next run found nothing (`Users with reminders: 0`). The timing fits Peeyoosh running the job on the same database. I created a fresh application for the real run.
+- **Another process marked my test application:** a run at about 10:48 UTC (16:18 IST), not by me, set `lastReminderSent` on my first reminder test application, so my next run found nothing (`Users with reminders: 0`). Confirmed by Peeyoosh: it was the startup run of his own server, which shares the database. I created a fresh application for the real run.
 - **Ethereal username pasted into the chat:** a fake-inbox username, low risk, but credentials stay out of chats.
 
 ## 9. Still to do
