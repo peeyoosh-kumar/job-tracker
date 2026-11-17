@@ -1,7 +1,8 @@
 // backend/routes/admin.js
 // Security layer: admin-only audit endpoints.
-//   GET /api/admin/logs   -> the security log, newest first
-//   GET /api/admin/events -> suspicious patterns spotted in the log
+//   GET /api/admin/logs    -> the security log, newest first
+//   GET /api/admin/events  -> suspicious patterns spotted in the log
+//   GET /api/admin/summary -> totals of the four security warnings
 // Peeyoosh mounts this with: app.use('/api/admin', require('./routes/admin'));
 
 const express = require('express');
@@ -85,6 +86,36 @@ router.get('/events', protect, adminOnly, (req, res) => {
 
   events.sort((a, b) => b.count - a.count); // most suspicious first
   res.json({ count: events.length, windowHours, events });
+});
+
+// GET /api/admin/summary?hours=24
+// Totals of the four security warnings inside the look-back window, for the
+// admin dashboard cards. Unlike /events, every occurrence is counted (no
+// per-IP threshold), so one failed login already shows as 1.
+// The hours rule is the same as /events: default 24, maximum 720.
+router.get('/summary', protect, adminOnly, (req, res) => {
+  const requested = parseInt(req.query.hours, 10);
+  const windowHours = requested > 0 ? Math.min(requested, 720) : 24;
+  const cutoff = Date.now() - windowHours * 60 * 60 * 1000;
+
+  const summary = {
+    windowHours,
+    failedLogins: 0,
+    rateLimitHits: 0,
+    deniedAdmin: 0,
+    invalidTokens: 0,
+  };
+
+  readLogEntries().forEach((entry) => {
+    const time = Date.parse(entry.timestamp);
+    if (Number.isNaN(time) || time < cutoff) return;
+    if (entry.message === 'Failed login') summary.failedLogins += 1;
+    else if (entry.message === 'Rate limit hit') summary.rateLimitHits += 1;
+    else if (entry.message === 'Admin access denied') summary.deniedAdmin += 1;
+    else if (entry.message === 'Invalid or expired token') summary.invalidTokens += 1;
+  });
+
+  res.json(summary);
 });
 
 module.exports = router;
