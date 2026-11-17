@@ -1,0 +1,13 @@
+.stats-three {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .stats-three {
+    grid-template-columns: 1fr;
+  }
+}
