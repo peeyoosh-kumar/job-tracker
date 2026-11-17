@@ -44,8 +44,14 @@ exports.getApplications = async (req, res) => {
 // POST /api/applications  -> add a new application
 exports.createApplication = async (req, res) => {
   try {
+    const data = pickAllowed(req.body);
+
+    // Phase 2: the first entry of the status history is the starting status
+    const startStatus = data.status || 'Applied';
+
     const application = await Application.create({
-      ...pickAllowed(req.body),
+      ...data,
+      statusHistory: [{ status: startStatus, changedAt: new Date() }],
       user: req.user._id   // the owner always comes from the token, never from the request body
     });
     res.status(201).json(application);
@@ -68,9 +74,28 @@ exports.updateApplication = async (req, res) => {
     if (!updates.appliedDate) delete updates.appliedDate;
 
     // Searching by BOTH id and user means you can only edit your own applications
+    const filter = { _id: req.params.id, user: req.user._id };
+
+    // Phase 2: read the current application first, so we know if the status really changes
+    const current = await Application.findOne(filter).select('status statusHistory createdAt');
+    if (!current) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    const changeDoc = { ...updates };
+    if (updates.status && updates.status !== current.status) {
+      const entries = [];
+      // Old applications (made before Phase 2) have no history yet, so save their old status first
+      if (!current.statusHistory || current.statusHistory.length === 0) {
+        entries.push({ status: current.status, changedAt: current.createdAt });
+      }
+      entries.push({ status: updates.status, changedAt: new Date() });
+      changeDoc.$push = { statusHistory: { $each: entries } };
+    }
+
     const application = await Application.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
-      updates,
+      filter,
+      changeDoc,
       { new: true, runValidators: true }
     );
 
