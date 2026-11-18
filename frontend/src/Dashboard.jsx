@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "./api";
+import "./Dashboard.css";
 
 const STATUS_ORDER = [
   "Applied",
@@ -52,6 +53,23 @@ function Dashboard({ token, onAuthError }) {
         <div className="stat">
           <div className="stat-number">{data.upcomingInterviews}</div>
           <div className="stat-label">Upcoming interviews</div>
+        </div>
+      </div>
+
+      {/* The backend sends these as whole percentages (67 means 67%).
+          "?? 0" shows 0 if a value is ever missing. */}
+      <div className="stats-three">
+        <div className="stat">
+          <div className="stat-number">{data.responseRate ?? 0}%</div>
+          <div className="stat-label">Response rate</div>
+        </div>
+        <div className="stat">
+          <div className="stat-number">{data.interviewRate ?? 0}%</div>
+          <div className="stat-label">Interview rate</div>
+        </div>
+        <div className="stat">
+          <div className="stat-number">{data.offerRate ?? 0}%</div>
+          <div className="stat-label">Offer rate</div>
         </div>
       </div>
 
