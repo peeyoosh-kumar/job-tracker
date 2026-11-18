@@ -3,6 +3,7 @@ import Register from "./Register";
 import Login from "./Login";
 import Applications from "./Applications";
 import Dashboard from "./Dashboard";
+import Admin from "./Admin";
 import NotificationBell from "./NotificationBell";
 
 // Reads token/user back out of localStorage when the app first loads.
@@ -48,6 +49,8 @@ function App() {
   }
 
   if (token && user) {
+    const isAdmin = user.role === "admin";
+
     return (
       <div>
         <div className="topbar">
@@ -81,10 +84,20 @@ function App() {
           >
             Dashboard
           </button>
+          {isAdmin && (
+            <button
+              className={view === "admin" ? "active" : ""}
+              onClick={() => setView("admin")}
+            >
+              Admin
+            </button>
+          )}
         </div>
 
         {view === "dashboard" ? (
           <Dashboard token={token} onAuthError={handleLogout} />
+        ) : view === "admin" && isAdmin ? (
+          <Admin token={token} onAuthError={handleLogout} />
         ) : (
           <Applications
             token={token}
